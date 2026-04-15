@@ -1,4 +1,4 @@
-name: Build Applications
+name: Build KegeAnsw
 
 on:
   push:
@@ -6,38 +6,89 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
 
+  build-windows:
+    runs-on: windows-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+      
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         
-    - name: Install dependencies
+    - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
         
-    - name: Build Windows
-      if: matrix.os == 'windows-latest'
-      run: pyinstaller --onefile --noconsole --icon=icon.ico --add-data "icon.ico;." --name KegeAnsw_Windows kege_app.py
+    - name: Download Material Icons
+      run: curl -L -o MaterialIcons-Regular.ttf https://github.com/google/material-design-icons/raw/master/font/MaterialIcons-Regular.ttf
+        
+    - name: Compile EXE
+      run: pyinstaller --onefile --noconsole --icon=icon.ico --add-data "icon.ico;." --add-data "MaterialIcons-Regular.ttf;." --name KegeAnsw_Windows kege_app.py
       
-    - name: Build Mac/Linux
-      if: matrix.os != 'windows-latest'
-      run: pyinstaller --onefile --noconsole --icon=icon.ico --add-data "icon.ico:." --name KegeAnsw_${{ runner.os }} kege_app.py
-      
-    - name: Upload Artifacts
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: KegeAnsw_${{ runner.os }}
+        name: KegeAnsw_Windows
+        path: dist/*
+
+
+  build-fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest 
+    steps:
+    - name: Install Fedora System Packages
+     
+      run: dnf install -y git python3 python3-pip python3-tkinter gcc curl binutils
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Python Dependencies
+      run: pip3 install -r requirements.txt pyinstaller
+
+    - name: Download Material Icons
+      run: curl -L -o MaterialIcons-Regular.ttf https://github.com/google/material-design-icons/raw/master/font/MaterialIcons-Regular.ttf
+
+    - name: Compile Linux Binary
+
+      run: pyinstaller --onefile --noconsole --icon=icon.ico --add-data "icon.ico:." --add-data "MaterialIcons-Regular.ttf:." --name KegeAnsw_Fedora kege_app.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: KegeAnsw_Fedora
+        path: dist/*
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Download Material Icons
+      run: curl -L -o MaterialIcons-Regular.ttf https://github.com/google/material-design-icons/raw/master/font/MaterialIcons-Regular.ttf
+        
+    - name: Compile APP
+      run: pyinstaller --onefile --noconsole --icon=icon.ico --add-data "icon.ico:." --add-data "MaterialIcons-Regular.ttf:." --name KegeAnsw_macOS kege_app.py
+      
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: KegeAnsw_macOS
         path: dist/*
